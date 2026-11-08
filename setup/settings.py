@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'cart',
     'catalog',
     'orders',
+    'drf_spectacular',
+    'django_filters',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -120,3 +123,12 @@ STATIC_URL = 'static/'
 
 # MODELO 'USUARIO' COMO ABSTRACTUSER
 AUTH_USER_MODEL = 'accounts.Usuario'
+
+# Adicionando permições na API: DjangoModelPermissions
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLAS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+}
+
+
