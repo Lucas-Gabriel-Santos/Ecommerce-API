@@ -57,12 +57,11 @@ class PedidoCriarSerializer(serializers.ModelSerializer):
 class PedidoStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices= StatusPedido.choices)
 
-    def update(self, instace, validated_data):
-        pass
-        # return alterar_status(instance, validated_data['status'])
+    def update(self, instance, validated_data):
+        return alterar_status(instance, validated_data['status'])
 
     def to_representation(self, instance):
-            return PedidoSerializer(instance, context = self.context).data
+        return PedidoSerializer(instance, context = self.context).data
 
 # UC09: Métodos de pagaento
 class MetodoPagamentoSerializer(serializers.ModelSerializer):
