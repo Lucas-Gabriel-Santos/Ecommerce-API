@@ -24,9 +24,15 @@ class VariacaoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Esta variação já existe para o produto")
         return attrs
 
+    def validate_tamanho(self, value):
+        return value.strip()
+
+    def validate_cor(self, value):
+        return value.strip()
+
 class VariacaoEstoqueSerializer(serializers.ModelSerializer):
     class Meta:
-        mmodel = Variacao
+        model = Variacao
         fields = ["id", "tamanho", "cor", "quantidade"]
         read_only_fields = ["id", "tamanho", "cor"]
     
@@ -39,9 +45,9 @@ class ProdutoListSerializer(serializers.ModelSerializer):
         fields = ['id', 'nome', 'preco', 'ativo', 'categoria']
 
 class ProdutoDetalheSerializer(serializers.ModelSerializer):
-    # No GET, mostra todos os dados de categoria e variações associadas ao protudo
-    categoria = CategoriaSerializer(read_only= True)
-    variacoes = VariacaoSerializer(many= True, read_only= True )
+    # No GET, mostra todos os dados de categoria e variações associadas ao produto
+    categoria = CategoriaSerializer(read_only=True)
+    variacoes = VariacaoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Produto
