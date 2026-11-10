@@ -37,9 +37,9 @@ class ProdutoFilter(django_filters.FilterSet):
         return queryset.filter(ativo = (value == 'ativo'))
 
 @extend_schema(
-    tags=["Categorias"],
-    summary="Listar categorias",
-    description="Categorias fixas da loja, criadas por seed. Acesso público e paginado.",
+    tags=['Categorias'],
+    summary='Lista de categorias',
+    description='Categorias fixas da loja, criadas por seed. Acesso público e paginado',
 )
 class CategoriaListView(generics.ListAPIView):
     queryset = Categoria.objects.all()
@@ -49,41 +49,49 @@ class CategoriaListView(generics.ListAPIView):
 
 @extend_schema_view(
     list=extend_schema(
-        tags=["Produtos"],
-        summary="Listar e buscar produtos",
+        tags=['Produtos'],
+        summary='Listar e buscar produtos',
         description=(
-            "Acesso público e paginado. Filtros combináveis: `category` (id), `min_price`, "
-            "`max_price`, `search` (nome). Visitantes e clientes veem só produtos ativos. "
-            "O lojista autenticado vê também os inativos e pode usar `status` (active ou inactive)."
+            """
+            Os produtos podem ser acessados por todos e é paginado. Os filtros combináveis: `category` (id), `min_price`, 
+            `max_price`, `search`. Os Visitantes e Clientes podem somente ver os produtos que estão ativos. O lojista autenticado vê todos os 
+            produtos, até os inativos e pode usar `status` (active ou inactive)
+            """
         ),
     ),
     retrieve=extend_schema(
-        tags=["Produtos"],
-        summary="Detalhar produto",
+        tags=['Produtos'],
+        summary='Detalhes do produto',
         description=(
-            "Acesso público. Devolve o produto com categoria e variações. "
-            "Produto inativo retorna 404 para visitantes e clientes."
+            """
+            Os produtos podem ser acessados por todos (Acesso público). Devolve o produto com categoria e variações.
+            Os produtos inativos retorna 404 para os Clientes e Visitantes.
+            """
         ),
     ),
     create=extend_schema(
-        tags=["Produtos"],
-        summary="Criar produto (lojista)",
+        tags=['Produtos'],
+        summary='Criar produto - lojista',
         description=(
-            "Somente lojista. O preço deve ser maior que zero e a categoria deve existir. "
-            "O estoque é controlado nas variações."
+            """
+            Somente o lojista. Os preços devems er maiores que zero e a categoria deve existir. 
+            O estoque de produtos é conrolado nas variações
+            """
         ),
-        examples=[OpenApiExample("Novo produto", request_only=True, value=EXEMPLO_PRODUTO)],
+        examples=[OpenApiExample('Novo produto', request_only=True, value=EXEMPLO_PRODUTO)],
     ),
     update=extend_schema(
-        tags=["Produtos"],
-        summary="Editar, ativar ou desativar produto (lojista)",
+        tags=['Produtos'],
+        summary='Editar, ativar ou desativar produto - lojista',
         description=(
-            "Somente lojista. Produtos não são excluídos: para tirar de venda, "
-            "envie `ativo: false`."
+            """
+            Somente o lojista. Os produtos não são excluídos. Eles são ativados e desativados.
+            Para tirar um produto de venda: `ativo: false`
+            """
         ),
         examples=[
             OpenApiExample(
-                "Desativar produto", request_only=True, value={**EXEMPLO_PRODUTO, "ativo": False}
+                'Desativar produto', request_only=True, value={**EXEMPLO_PRODUTO, 'ativo': False}
             )
         ],
     ),
@@ -121,28 +129,32 @@ class ProdutoViewSet(
 
 @extend_schema_view(
     create=extend_schema(
-        tags=["Variações"],
-        summary="Criar variação de um produto (lojista)",
+        tags=['Variações'],
+        summary='Criar variação de um produto - lojista',
         description=(
-            "Somente lojista. Cada combinação de tamanho e cor é única dentro do produto. "
-            "Para produtos de tamanho único, use o tamanho `Único`."
+            """
+            Somente o lojista. Cada combinação de tamanho e cor é única dentro de um produto.
+            Para produtos de tamanho único, basta usar tamanho `Único`
+            """
         ),
         examples=[
             OpenApiExample(
-                "Nova variação",
+                'Nova variação',
                 request_only=True,
-                value={"tamanho": "M", "cor": "Azul", "quantidade": 10},
+                value={'tamanho': "M", "cor": "Azul", "quantidade": 10},
             )
         ],
     ),
     update=extend_schema(
-        tags=["Variações"],
-        summary="Atualizar o estoque de uma variação (lojista)",
+        tags=['Variações'],
+        summary='Atualizar o estoque de uma variação - lojista',
         description=(
-            "Somente lojista. Atualiza apenas a quantidade em estoque (inteiro, não negativo). "
-            "Variações não são excluídas: para tirar de venda, zere o estoque."
+            """
+            Somente o lojista. Atualiza apenas a quantidade em estoque.
+            Variações não são excluídas, zere o estoque para tirar de venda.
+            """
         ),
-        examples=[OpenApiExample("Novo estoque", request_only=True, value={"quantidade": 25})],
+        examples=[OpenApiExample('Novo estoque', request_only=True, value={'quantidade': 25})],
     ),
 )
 class VariacaoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
