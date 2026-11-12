@@ -115,7 +115,53 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
 
         return Response(serializer.data)
 
+@extend_schema_view(
+    create = extend_schema(
+        tags = ['Métodos de Pagamento'],
+        summary = 'Cadastrar métodos de pagamento',
+        description = (
+            """
+            Somente o Cliente. Tipos de método: PIX, CREDITO E DEBIDO. Se formcartão o cliente informa os 4 últimos
+            digitos. O número completo do cartão e o CVV nunca são aceitas.
+            """
+        ),
+        exemples = [
+            OpenApiExample(
+                'Cartão de crédito', request_only=True,
+                value={"tipo": "CREDITO", "apelido": "Cartão principal", "ultimos4": "9696"},
+            ),
+            OpenApiExample("Pix", request_only=True, value={"tipo": "PIX", "apelido": "Chave CPF"}),
+        ],
+    ),
+    list = extend_schema(
+        tags = ['Métodos de Pagamento'],
+        summary = 'Listar os métodos de pagamento',
+        description = (
+            """
+            Somente o Cliente. Paginado, apenas os clientes logados podem ver os métodos.
+            """
+        ),
+    ),
+    destroy = extend_schema(
+        tags = ['Métodos de Pagamento'],
+        summary = 'Remover os métodos de pagamento',
+        description = (
+            """
+            Somente o Cliente, e apenas os próprios métodos. Pedidos já feitos não são afetados, 
+            porque guardam uma cópia dos dados.
+            """
+        ),
+    ),
+)
 class MetodoPagamentoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     serializer_class = MetodoPagamentoSerializer
     permission_class = [EhCliente]
     http_method_names = ["get", "post", "delete", "head", "options"]
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return MetodoPagamento.objects.none()
+        return MetodoPagamento.objects.filter(cliente__usuario = self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(cliente = self.request.user.cliente)
