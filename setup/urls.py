@@ -7,7 +7,8 @@ from catalog.views import CategoriaListView, ProdutoViewSet, VariacaoViewSet
 from cart.views import CarrinhoView, ItemCarrinhoViewSet
 from orders.views import MetodoPagamentoViewSet, PedidoViewSet
 
-router = SimpleRouter(trailing_slash=False)  # sem barra final, como no documento
+router = SimpleRouter(trailing_slash=False)  
+
 router.register("products", ProdutoViewSet, basename="produto")
 router.register("cart/items", ItemCarrinhoViewSet, basename="item-carrinho")
 router.register("orders", PedidoViewSet, basename="pedido")
@@ -27,14 +28,11 @@ urlpatterns = [
     path("docs", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 
     # catalog 
-    path("categories", CategoriaListView.as_view(), name="categoria-list"),
     path("products/<int:produto_id>/variations", VariacaoViewSet.as_view({"post": "create"}), name="variacao-criar"),
     path("products/<int:produto_id>/variations/<int:pk>", VariacaoViewSet.as_view({"put": "update"}), name="variacao-atualizar"),
+    path("categories", CategoriaListView.as_view(), name="categoria-list"),
     path("", include(router.urls)),
 
     # cart 
     path("cart", CarrinhoView.as_view(), name="carrinho"),
-
-
-
 ]
