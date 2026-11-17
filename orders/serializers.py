@@ -27,22 +27,22 @@ class PedidoSerializer(serializers.ModelSerializer):
 
 # POST/orders
 class PedidoCriarSerializer(serializers.ModelSerializer):
-    id_payment_method = serializers.PrimaryKeyRelatedField(
+    payment_method_id = serializers.PrimaryKeyRelatedField(
         queryset = MetodoPagamento.objects.none(),
-        source = "metodo_pagameto",
+        source = "metodo_pagamento",
         write_only = True
     )
 
     class Meta:
         model = Pedido
-        fields = ['cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'id_payment_method']
+        fields = ['cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'payment_method_id']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get('request')
 
         if request and request.user.is_authenticated and hasattr(request.user, 'cliente'):
-            self.fields['id_payment_method'].queryset  = MetodoPagamento.objects.filter(cliente = request.user.cliente)
+            self.fields['payment_method_id'].queryset  = MetodoPagamento.objects.filter(cliente = request.user.cliente)
 
     def create(self, validated_data):
         metodo = validated_data.pop('metodo_pagamento')
@@ -67,7 +67,7 @@ class PedidoStatusSerializer(serializers.Serializer):
 class MetodoPagamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MetodoPagamento
-        fields = '__all__'
+        fields = ['id', 'tipo', 'apelido', 'ultimos4']
         read_only_fields = ['id']
 
     # UC09: Faz com que não seja permitido adicionar o n° completo do cartão ou o CVV
@@ -89,7 +89,7 @@ class MetodoPagamentoSerializer(serializers.ModelSerializer):
             if ultimos4:
                 raise serializers.ValidationError({'Ultimos4': 'PIX não usa os 4 últimos dígitos'})
 
-            elif not ultimos4:
-                raise serializers.ValidationError({'Ultimos4': 'Informe os últimos 4 dígitos do seu cartãi'})
+        elif not ultimos4:
+            raise serializers.ValidationError({'Ultimos4': 'Informe os últimos 4 dígitos do seu cartão'})
 
-            return attrs
+        return attrs

@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
 import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, extend_schema, extend_schema_view
 from rest_framework import generics, mixins, viewsets
@@ -19,12 +20,12 @@ EXEMPLO_PRODUTO = {
 }
 
 class ProdutoFilter(django_filters.FilterSet):
-    categoria = django_filters.NumberFilter(field_name="categoria_id")
-    preco_max = django_filters.NumberFilter(field_name="preco", lookup_expr="lte")
-    preco_min = django_filters.NumberFilter(field_name="preco", lookup_expr="gte")
-    pesquisa = django_filters.CharFilter(field_name="nome", lookup_expr="icontains")
+    category  = django_filters.NumberFilter(field_name="categoria_id")
+    max_price  = django_filters.NumberFilter(field_name="preco", lookup_expr="lte")
+    min_price  = django_filters.NumberFilter(field_name="preco", lookup_expr="gte")
+    search  = django_filters.CharFilter(field_name="nome", lookup_expr="icontains")
     status = django_filters.ChoiceFilter( 
-        choices=[('ativo', 'ativo'), ('inativo', 'inativo')], method="filtrar_status",
+        choices=[('active', 'active'), ('inactive', 'inactive')], method="filtrar_status",
     )
 
     class Meta:
@@ -34,7 +35,7 @@ class ProdutoFilter(django_filters.FilterSet):
     def filtrar_status(self, queryset, name, value):
         if not ehLojista(self.request.user):
             return queryset
-        return queryset.filter(ativo = (value == 'ativo'))
+        return queryset.filter(ativo = (value == 'active'))
 
 @extend_schema(
     tags=['Categorias'],

@@ -87,7 +87,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
 
         # O cliente vai ver somente os próprios pedidos
         if not ehLojista(self.request.user):
-            return queryset.filtes(cliente__usuario = self.request.user)
+            return queryset.filter(cliente__usuario = self.request.user)
 
         if self.action == "list":
             status_pedido = self.request.query_params.get('status')
@@ -107,7 +107,8 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
             return PedidoStatusSerializer
         return PedidoSerializer
 
-    def status_alterar(self, request, pk = None):
+    @action(detail= True, methods=["patch"], url_path= "status")
+    def alterar_status(self, request, pk = None):
         pedido = self.get_object()
         serializer = self.get_serializer(pedido, data = request.data)
         serializer.is_valid(raise_exception = True)
@@ -125,7 +126,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
             digitos. O número completo do cartão e o CVV nunca são aceitas.
             """
         ),
-        exemples = [
+        examples = [
             OpenApiExample(
                 'Cartão de crédito', request_only=True,
                 value={"tipo": "CREDITO", "apelido": "Cartão principal", "ultimos4": "9696"},
@@ -155,7 +156,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
 )
 class MetodoPagamentoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     serializer_class = MetodoPagamentoSerializer
-    permission_class = [EhCliente]
+    permission_classes = [EhCliente]
     http_method_names = ["get", "post", "delete", "head", "options"]
 
     def get_queryset(self):

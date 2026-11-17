@@ -80,7 +80,7 @@ class AdicionarItemSerializer(serializers.Serializer):
         return ItemCarrinhoSerializer(instance, context=self.context).data
 
 # PUT/cart/items
-class AtualizarItemSerializer(serializers.Serializer):
+class AtualizarItemSerializer(serializers.ModelSerializer):
     quantidade = serializers.IntegerField(min_value= 1)
 
     class Meta:

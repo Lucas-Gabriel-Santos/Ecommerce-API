@@ -2,7 +2,7 @@ from rest_framework.permissions import BasePermission
 from accounts.models import Usuario
 
 def ehLojista(user):
-    return bool(user and user.is_autheticated and user.papel == Usuario.Papel.LOJISTA)
+    return bool(user and user.is_authenticated and user.papel == Usuario.Papel.LOJISTA)
 
 class EhLojista(BasePermission):
     message = 'Apenas o Lojista pode realizar esta ação'
@@ -15,5 +15,5 @@ class EhCliente(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_autheticated and user.papel == Usuario.Papel.CLIENTE)
+        return bool(user and user.is_authenticated and user.papel == Usuario.Papel.CLIENTE)
     

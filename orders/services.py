@@ -23,7 +23,7 @@ TRANSICOES = {
 @transaction.atomic
 def criar_pedido(cliente, endereco, metodo):
     carrinho = Carrinho.objects.get(cliente = cliente)
-    itens = list(carrinho.itens.select_related('variacao_produto'))
+    itens = list(carrinho.itens.select_related('variacao__produto'))
 
     if not itens:
         raise ValidationError('O carrinho está vazio')
@@ -46,39 +46,39 @@ def criar_pedido(cliente, endereco, metodo):
                 "disponivel": variacao.quantidade,
             })
 
-        if estoque_vazio:
-            raise EstoqueInsuficiente({"detail": 'Existe itens sem estoque suficiente', "itens": estoque_vazio})
+    if estoque_vazio:
+        raise EstoqueInsuficiente({"detail": 'Existe itens sem estoque suficiente', "itens": estoque_vazio})
 
-        # Cria o pedido com a cópia do endereço e do pagamento
-        pedido = Pedido.objects.create(
-            cliente=cliente,
-            tipo_pagamento=metodo.tipo,
-            ultimos4_pagamento=metodo.ultimos4,
-            **endereco,
-        )
+    # Cria o pedido com a cópia do endereço e do pagamento
+    pedido = Pedido.objects.create(
+        cliente=cliente,
+        tipo_pagamento=metodo.tipo,
+        ultimos4_pagamento=metodo.ultimos4,
+        **endereco,
+    )
 
-        # Baixa o estoque e congela o preço de cada item
-        itens_pedido = []
-        for item in itens:
-            baixou = Variacao.objects.filter(
-                pk=item.variacao_id, quantidade__gte=item.quantidade
-            ).update(quantidade=F('quantidade') - item.quantidade)
+    # Baixa o estoque e congela o preço de cada item
+    itens_pedido = []
+    for item in itens:
+        baixou = Variacao.objects.filter(
+            pk=item.variacao_id, quantidade__gte=item.quantidade
+        ).update(quantidade=F('quantidade') - item.quantidade)
 
-            if not baixou:
-                raise EstoqueInsuficiente({"detail": 'O estoque mudou durante a compra', "itens": [{"id_variacao": item.id_variacao}]})
+        if not baixou:
+            raise EstoqueInsuficiente({"detail": 'O estoque mudou durante a compra', "itens": [{"id_variacao": item.variacao_id}]})
 
-            itens_pedido.append(ItemPedido(
-                pedido=pedido,
-                variacao=item.variacao,
-                quantidade=item.quantidade,
-                preco_unitario=item.variacao.produto.preco
-            ))
+        itens_pedido.append(ItemPedido(
+            pedido=pedido,
+            variacao=item.variacao,
+            quantidade=item.quantidade,
+            preco_unitario=item.variacao.produto.preco
+        ))
 
-        ItemPedido.objects.bulk_create(itens_pedido)
+    ItemPedido.objects.bulk_create(itens_pedido)
 
-        # Vai esvaziar o carrinho
-        carrinho.itens.all().delete()
-        return pedido
+    # Vai esvaziar o carrinho
+    carrinho.itens.all().delete()
+    return pedido
 
 # Muda o status respeitando as transições. Cancelar devolve para o estoque - UC08
 @transaction.atomic
@@ -98,7 +98,7 @@ def alterar_status(pedido, novo_status):
 
    if novo_status == StatusPedido.CANCELADO:
        for item in pedido.itens.all():
-           Variacao.objects.filter(pk = item.id_variacao).update(
+           Variacao.objects.filter(pk = item.variacao_id).update(
                quantidade = F('quantidade') + item.quantidade
             )
            

@@ -21,7 +21,7 @@ from cart.serializers import  CarrinhoSerializer, AdicionarItemSerializer, Atual
 class CarrinhoView(generics.RetrieveAPIView):
     queryset = Carrinho.objects.none()
     serializer_class = CarrinhoSerializer
-    permission_class = [EhCliente]
+    permission_classes = [EhCliente]
 
     # O cliente só vai poder ver o proprio carrinho
     def get_object(self):

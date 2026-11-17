@@ -69,7 +69,7 @@ class RegistroView(generics.CreateAPIView):
     ],
 )
 class LoginView(TokenObtainPairView):
-    permission_class = [AllowAny]
+    permission_classes = [AllowAny]
     authentication_classes = []
 
 @extend_schema(
@@ -83,7 +83,7 @@ class LoginView(TokenObtainPairView):
     examples=[OpenApiExample('Solicitação', request_only=True, value={"email": "gabriel@email.com"})],
 )
 class EsqueciSenhaView(APIView):
-    permission_class = [AllowAny]
+    permission_classes = [AllowAny]
     authentication_classes = []
 
     def post(self, request):
@@ -144,7 +144,7 @@ class EsqueciSenhaView(APIView):
     ],
 )
 class RedefinirSenhaView(APIView):
-    permission_class = [AllowAny]
+    permission_classes = [AllowAny]
     authentication_classes = []
 
     def post(self, request):
