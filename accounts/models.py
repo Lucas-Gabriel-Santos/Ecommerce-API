@@ -5,9 +5,11 @@ import uuid
 from django.utils import timezone
 from datetime import timedelta
 
+# Controla a criação de usuários usando o email como identificados de autenticação
 class UsuarioManager(BaseUserManager):
     use_in_migrations = True
 
+    # Responsável por normalizar o email, definir senha e salvar o usuário no banco
     def _create_user(self, email, password, **extra):
         if not email:
             raise ValueError("O email é obrigatório.")
@@ -21,12 +23,14 @@ class UsuarioManager(BaseUserManager):
         extra.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra)
 
+    # Responsável por criar um superusuário com permissões administrativas
     def create_superuser(self, email, password= None, **extra):
         extra.setdefault("is_staff", True)
         extra.setdefault("is_superuser", True)
         return self._create_user(email, password, **extra)
 
-class Usuario(AbstractUser): #AbstractUser já vem com o campo Senha
+# Autenticação personalizada
+class Usuario(AbstractUser): # AbstractUser já vem com o campo Senha
     class Papel(models.TextChoices):
         CLIENTE = 'cliente', 'Cliente'
         LOJISTA = 'lojista', 'Lojista'
@@ -43,6 +47,7 @@ class Usuario(AbstractUser): #AbstractUser já vem com o campo Senha
     def __str__(self):
         return f'{self.email} - ({self.papel})'
 
+# Guarda os dados do cliente. Cada cliente está associado a um único usuário
 class Cliente(models.Model):
     usuario = models.OneToOneField(
         Usuario, 
@@ -59,6 +64,7 @@ class Cliente(models.Model):
     def __str__(self):
         return self.nome
 
+# Guarda os tokens temporários usados na recuperação de senha
 class TokenRecuperacaoSenha(models.Model):
     usuario = models.ForeignKey(
         Usuario, 

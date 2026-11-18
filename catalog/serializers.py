@@ -11,6 +11,7 @@ class VariacaoSerializer(serializers.ModelSerializer):
         model = Variacao
         fields = ['id', 'tamanho', 'cor', 'quantidade']
 
+    # Verifica se existe outra variação com a mesma cor e tamanho
     def validate(self, attrs):
         produto = self.context['produto']
         tamanho = attrs.get('tamanho', getattr(self.instance, 'tamanho', None))
@@ -30,13 +31,14 @@ class VariacaoSerializer(serializers.ModelSerializer):
     def validate_cor(self, value):
         return value.strip()
 
+# Serializer para atualizar o estoque
 class VariacaoEstoqueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Variacao
         fields = ["id", "tamanho", "cor", "quantidade"]
         read_only_fields = ["id", "tamanho", "cor"]
     
-
+# Representa os produtos para a listagem do catalogo
 class ProdutoListSerializer(serializers.ModelSerializer):
     categoria = serializers.CharField(source="categoria.nome", read_only=True)
 
@@ -44,6 +46,7 @@ class ProdutoListSerializer(serializers.ModelSerializer):
         model = Produto
         fields = ['id', 'nome', 'preco', 'ativo', 'categoria']
 
+# Dados completos de um produto
 class ProdutoDetalheSerializer(serializers.ModelSerializer):
     # No GET, mostra todos os dados de categoria e variações associadas ao produto
     categoria = CategoriaSerializer(read_only=True)
@@ -53,6 +56,7 @@ class ProdutoDetalheSerializer(serializers.ModelSerializer):
         model = Produto
         fields = ['id', 'nome','descricao', 'preco', 'ativo', 'categoria', 'categoria_id', 'variacoes']
 
+# Serializer utilizado na crianção e edição de produtos
 class ProdutoEscritaSerializer(serializers.ModelSerializer):
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria')
 
@@ -61,18 +65,19 @@ class ProdutoEscritaSerializer(serializers.ModelSerializer):
         fields = ['id', 'nome', 'descricao', 'preco', 'ativo', 'categoria_id']
         read_only_fields = ['id']
 
+    # Remove espaços em brancos e impede que o produto seja cadastrado com o nome vazio
     def validate_nome(self, value):
         value = value.strip()
         if not value:
             raise serializers.ValidationError("O nome não pode ficar vazio")
         return value
 
+    # Valida se o preço é maior que zero
     def validate_preco(self, value):
         if value <= 0:
             raise serializers.ValidationError("O preço deve ser maior que zero")
         return value
 
+    # Depois de criar ou editar, devolve o formato completo do detalhe
     def to_representation(self, instance):
-        
-        # Depois de criar ou editar, devolve o formato completo do detalhe.
         return ProdutoDetalheSerializer(instance, context=self.context).data

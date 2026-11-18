@@ -1,6 +1,7 @@
 import re
 from rest_framework import serializers
 
+# Valida a força da senha
 def validar_forca_senha(value):
     faltas = []
     if len(value) < 8:

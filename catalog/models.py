@@ -2,8 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 
-# UC03, UC04 e UC05: Categoria, Produto e Variacao
-
+# Categorias utilizadas para a organização dos produtos
 class Categoria(models.Model):
     nome = models.CharField(max_length= 25, unique=True)
 
@@ -13,6 +12,7 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nome
 
+# Produtos que são vinculados a uma categoria
 class Produto(models.Model):
     categoria = models.ForeignKey(
         Categoria, 
@@ -27,6 +27,7 @@ class Produto(models.Model):
     class Meta:
         ordering = ["-id"]
         constraints = [
+            # Preço sempre maior que zero
             models.CheckConstraint(
                 condition=models.Q(preco__gt=0), 
                 name="produto_preco_positivo",
@@ -36,6 +37,7 @@ class Produto(models.Model):
     def __str__(self):
         return f'{self.nome} - {self.preco}'
 
+# Variações de um produto
 class Variacao(models.Model):
     produto = models.ForeignKey(
         Produto, 
@@ -49,6 +51,7 @@ class Variacao(models.Model):
     class Meta:
        ordering = ["id"]
        constraints = [
+           # Garante que não exista duplicatas de variações para o mesmo produto
             models.UniqueConstraint(
                 fields=["produto", "tamanho", "cor"],
                 name="variacao_unica_por_produto",

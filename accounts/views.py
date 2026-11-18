@@ -52,6 +52,7 @@ MENSAGEM_FORGOT = "Enviaremos as instruções de recuperação se o seu email j�
     ],
 )
 class RegistroView(generics.CreateAPIView):
+    # Realiza o cadastro do cliente
     serializer_class = RegistroSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -69,6 +70,7 @@ class RegistroView(generics.CreateAPIView):
     ],
 )
 class LoginView(TokenObtainPairView):
+    # Valida as credenciais e retorna o token de acesso
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -83,6 +85,7 @@ class LoginView(TokenObtainPairView):
     examples=[OpenApiExample('Solicitação', request_only=True, value={"email": "gabriel@email.com"})],
 )
 class EsqueciSenhaView(APIView):
+    # Responsável pela solicitação da recuperação de senha
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -92,6 +95,7 @@ class EsqueciSenhaView(APIView):
         email = serializer.validated_data['email']
         usuario = Usuario.objects.filter(email__iexact=email, is_active=True).first()
 
+        # Gera e envia o token somente ao usuário ativo associado ao email
         if usuario is not None:
 
             with transaction.atomic():
@@ -101,6 +105,7 @@ class EsqueciSenhaView(APIView):
                     expira_em = timezone.now() + timedelta(minutes=settings.PASSWORD_RESET_TIMEOUT_MINUTES)
                 )
 
+            # Link de redefinição e o token tempopário
             link = f"{settings.PASSWORD_RESET_URL}?token={registro.token}"
             try:
                 send_mail(
@@ -116,6 +121,7 @@ class EsqueciSenhaView(APIView):
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[usuario.email],
                 )
+            # Mostra a falha no envio do email
             except Exception:
                 logger.exception('Falha ao enviar email de recuperação')
 
@@ -144,6 +150,7 @@ class EsqueciSenhaView(APIView):
     ],
 )
 class RedefinirSenhaView(APIView):
+    # Valida token e atualiza a senha do usuário
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -152,8 +159,9 @@ class RedefinirSenhaView(APIView):
         serializer.is_valid(raise_exception = True)
         token = serializer.validated_data['token']
         senha_nova = serializer.validated_data['new_password']
-
+  
         with transaction.atomic():
+            # Considera apenas tokens válidos, não utilizados e ainda não expirados
             registro = (
                 TokenRecuperacaoSenha.objects.select_for_update()
                 .select_for_update('usuario')
@@ -165,7 +173,7 @@ class RedefinirSenhaView(APIView):
                 raise ValidationError('Token inválido ou já expirado')
 
             usuario = registro.usuario
-            usuario.set_password(senha_nova)
+            usuario.set_password(senha_nova) # Atualiza a senha utilizando hash
             usuario.save(update_fields=['password'])
 
             TokenRecuperacaoSenha.objects.filter(usuario=usuario, usado=False).update(usado=True)

@@ -11,14 +11,16 @@ from accounts.permissions import EhLojista, ehLojista
 from catalog.models import Categoria, Produto, Variacao
 from catalog.serializers import CategoriaSerializer, ProdutoDetalheSerializer, ProdutoEscritaSerializer, ProdutoListSerializer, VariacaoEstoqueSerializer, VariacaoSerializer
 
+# Exemplo de dados utilizado na documentação Swagger
 EXEMPLO_PRODUTO = {
-    "nome": "Camisa preta ",
+    "nome": "Camisa da banda kiss",
     "descricao": "Camisa preta de algodão com estampa frontal da banda kiss",
     "preco": "89.99",
     "ativo": True,
     "categoria_id": 1,
 }
 
+# Define os filtros para a consulta de produtos. Permite filtrar por categoria, faixa de preço, nome e situação
 class ProdutoFilter(django_filters.FilterSet):
     category  = django_filters.NumberFilter(field_name="categoria_id")
     max_price  = django_filters.NumberFilter(field_name="preco", lookup_expr="lte")
@@ -32,6 +34,7 @@ class ProdutoFilter(django_filters.FilterSet):
         model = Produto
         fields = []
 
+    # Permite que somente o lojista filtre os produtos por status
     def filtrar_status(self, queryset, name, value):
         if not ehLojista(self.request.user):
             return queryset
@@ -43,6 +46,7 @@ class ProdutoFilter(django_filters.FilterSet):
     description='Categorias fixas da loja, criadas por seed. Acesso público e paginado',
 )
 class CategoriaListView(generics.ListAPIView):
+    # Listagem pública e paginada das categorias cadastradas
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [AllowAny]
@@ -101,11 +105,13 @@ class ProdutoViewSet(
     mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, 
     mixins.UpdateModelMixin, viewsets.GenericViewSet
 ):
+    # View de Produtos: Consulta, cria e atualiza produtos
     filterset_class = ProdutoFilter
 
     # Definindo métodos HTTP permitidos
     http_method_names = ["get", "post", "put", "head", "options"]
 
+    # Permite consultas públicas, mas a criação e atualização é apenas do lojista
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [AllowAny()]
@@ -115,12 +121,15 @@ class ProdutoViewSet(
         queryset = Produto.objects.select_related('categoria')
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related('variacoes')
+        # Clientes e visitantes podem somente ver produtos com status ativo
         if not ehLojista(self.request.user):
             queryset = queryset.filter(ativo = True)
 
         return queryset
 
+    # Seleciona o serializer conforme a operação
     def get_serializer_class(self):
+
         if self.action == 'list':
             return ProdutoListSerializer
         if self.action == 'retrieve':
@@ -159,7 +168,10 @@ class ProdutoViewSet(
     ),
 )
 class VariacaoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    permission_classes = [EhLojista]
+    # Gerencia a criação de variações e a atualização do estoque dos produtos
+    
+    # Permite apenas o lojista fazer as operações
+    permission_classes = [EhLojista] 
 
     # Definindo métodos HTTP permitidos
     http_method_names = ["post", "put", "head", "options"]
