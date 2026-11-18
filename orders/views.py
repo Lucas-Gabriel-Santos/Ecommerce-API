@@ -11,6 +11,7 @@ from accounts.permissions import EhCliente, EhLojista, ehLojista
 from orders.models import MetodoPagamento, Pedido, StatusPedido
 from orders.serializers import MetodoPagamentoSerializer, PedidoCriarSerializer, PedidoSerializer, PedidoStatusSerializer
 
+# Define os status considerados ativos
 STATUS_ATIVOS = [StatusPedido.PENDENTE, StatusPedido.CONFIRMADO, StatusPedido.ENVIADO]
 
 @extend_schema_view(
@@ -69,9 +70,11 @@ STATUS_ATIVOS = [StatusPedido.PENDENTE, StatusPedido.CONFIRMADO, StatusPedido.EN
     ),
 )
 class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+# Gerencia a criação, atualizaçao e consulta dos pedidos
 
     http_method_names = ["get", "post", "patch", "head", "options"]
 
+    # Define as permissões conforme a operação "create" e "alterar_status"
     def get_permissions(self):
         if self.action == "create":
             return [EhCliente()]
@@ -79,6 +82,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
             return [EhLojista()]
         return [IsAuthenticated()]
 
+    # Restringe quais pedidos cada usuário pode consultar
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Pedido.objects.none()
@@ -100,6 +104,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
             return queryset.filter(status__in = STATUS_ATIVOS)
         return queryset
 
+    # Seleciona o serializer pra cada operação
     def get_serializer_class(self):
         if self.action == "create":
             return PedidoCriarSerializer
@@ -107,6 +112,7 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
             return PedidoStatusSerializer
         return PedidoSerializer
 
+    # Gera uma rota para permitir que o lojista atualize o status do pedido
     @action(detail= True, methods=["patch"], url_path= "status")
     def alterar_status(self, request, pk = None):
         pedido = self.get_object()
@@ -155,10 +161,13 @@ class PedidoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retri
     ),
 )
 class MetodoPagamentoViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    # Gerencia o cadastro, listagem e remoção dos métodos de pagamento
+
     serializer_class = MetodoPagamentoSerializer
     permission_classes = [EhCliente]
     http_method_names = ["get", "post", "delete", "head", "options"]
 
+    # Restringe a consulta dos métodos de pagamento ao cliente 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return MetodoPagamento.objects.none()

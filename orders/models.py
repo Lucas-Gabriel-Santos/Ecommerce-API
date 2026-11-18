@@ -3,13 +3,13 @@ from django.core.validators import MinValueValidator, RegexValidator
 from accounts.models import Cliente
 from catalog.models import Variacao
 
-# UC07, UC08 e UC09: Pedido, ItemPedido, MetodoPagamento
-
+# Responsável pelos tipos de pagamento aceitos
 class TipoPagamento(models.TextChoices):
     PIX = 'PIX', 'Pix'
     CREDITO = 'CREDITO', 'Cartão de Crédito'
     DEBITO = 'DEBITO', 'Cartão de Débito'
 
+# Estados de um pedido durante o seu processamento
 class StatusPedido(models.TextChoices):
     PENDENTE = "PENDENTE", "Pendente"
     CONFIRMADO = "CONFIRMADO", "Confirmado"
@@ -17,10 +17,12 @@ class StatusPedido(models.TextChoices):
     ENTREGUE = "ENTREGUE", "Entregue"
     CANCELADO = "CANCELADO", "Cancelado"
 
+# validadores
 validar_cep = RegexValidator(r"^\d{8}$", "O CEP deve ter 8 dígitos.")
-validar_uf = RegexValidator(r"^[A-Z]{2}$", "Use a sigla da UF em maiúsculas.") #DOCUMENTAR NO SWAGGER QUE SOMENTE PODE LETRAS MAIUSCULAS
+validar_uf = RegexValidator(r"^[A-Z]{2}$", "Use a sigla da UF em maiúsculas.") # DOCUMENTAR NO SWAGGER QUE SOMENTE PODE LETRAS MAIUSCULAS
 validar_ultimos4 = RegexValidator(r"^\d{4}$", "Informe os 4 últimos dígitos.")
 
+# Representa a compra do cliente
 class Pedido(models.Model):
     cliente = models.ForeignKey(
         Cliente, 
@@ -43,13 +45,15 @@ class Pedido(models.Model):
     class Meta:
         ordering = ["criado_em", "id"]
 
+    # Calculo do valor total do pedido
     @property
     def total(self):
         return sum(item.quantidade * item.preco_unitario for item in self.itens.all())
 
     def __str__(self):
         return f'Pedido #{self.id} - {self.cliente.nome} ({self.status})'
-    
+
+# Armazena os produtos e suas variações
 class ItemPedido(models.Model):
     pedido = models.ForeignKey(
         Pedido, 
@@ -64,6 +68,11 @@ class ItemPedido(models.Model):
     quantidade = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     preco_unitario = models.DecimalField(max_digits= 10, decimal_places= 2)
 
+    """
+    Vai garantir que uma variação não seja repetida no mesmo pedido, 
+    a quantidade seja maior ou igual a 1 e o preço seja maior que zero
+    
+    """
     class Meta:
         ordering = ['id']
         constraints = [
@@ -75,6 +84,11 @@ class ItemPedido(models.Model):
     def __str__(self):
         return f'{self.quantidade}x {self.variacao.produto.nome} (Pedido #{self.pedido_id})'
 
+"""
+Guarda os metodos de pagamento registrados do cliente.
+Para metodos de cartões, são armazenadas somente os quatro últimos dígitos,
+evitante armazenar dados completos do cartão
+"""
 class MetodoPagamento(models.Model):
     cliente = models.ForeignKey(
         Cliente, 

@@ -1,6 +1,9 @@
 from rest_framework.views import exception_handler
 
+# Personaliza o tratamento de exceções
 def tratar_erros(exc, context):
+
+    # Usa o tratamento padra do DRF para reconhecer a exceção e obter a resposta HTTP
     response = exception_handler(exc, context)
 
     if response is None:

@@ -3,8 +3,7 @@ from django.core.validators import MinValueValidator
 from accounts.models import Cliente
 from catalog.models import Variacao
 
-# UC06: Carrinho e ItemCarrinho
-
+# Cada cliente possui um único carrinho e ele armazerna os itens até o final da compra
 class Carrinho(models.Model):
     cliente = models.OneToOneField(
         Cliente, 
@@ -14,6 +13,7 @@ class Carrinho(models.Model):
     def __str__(self):
         return f'Carrinho de {self.cliente.nome}'
 
+# Cada variação adicionada ao carrinho, guardando sua quantidade e impedindo duplicatas da mesma variação
 class ItemCarrinho(models.Model):
     carrinho = models.ForeignKey(
         Carrinho, 
@@ -27,12 +27,14 @@ class ItemCarrinho(models.Model):
     )
     quantidade = models.PositiveBigIntegerField(default= 1, validators=[MinValueValidator(1)]) # Quantidade mínima começa com 1 ao adicionar
 
+    # Garante que a variação apareça apenas uma vez no carrinho
     class Meta:
         ordering = ['id']
         constraints = [
             models.UniqueConstraint(
                 fields=["carrinho", "variacao"], name="variacao_unica_por_carrinho"
             ),
+            # Quantidade de itens seja sempre maior ou igual a um
             models.CheckConstraint(
                 condition=models.Q(quantidade__gte=1), name="item_carrinho_quantidade_minima"
             ),

@@ -4,6 +4,7 @@ from catalog.models import Variacao
 from decimal import Decimal
 from django.db import transaction
 
+# Mostra as informações do produto, sua variação, preço, quantidade e subtotal
 class ItemCarrinhoSerializer(serializers.ModelSerializer):
     produto = serializers.CharField(source="variacao.produto.nome", read_only=True)
     id_variacao = serializers.IntegerField(source="variacao.id", read_only=True)
@@ -18,10 +19,12 @@ class ItemCarrinhoSerializer(serializers.ModelSerializer):
             "id", "produto", "id_variacao", "tamanho", "cor",
             "preco_unitario", "quantidade", "subtotal",
         ]
-    
+
+    # Calcula o subtotal do item multiplicando o preço atual pela quantidade adicionada
     def get_subtotal(self, obj):
         return (obj.quantidade * obj.variacao.produto.preco).quantize(Decimal("0.01"))
 
+# Serializer do carrinho, com os itens e o valor total da compra
 class CarrinhoSerializer(serializers.ModelSerializer):
     itens = ItemCarrinhoSerializer(many= True, read_only= True)
     total = serializers.SerializerMethodField()
@@ -30,6 +33,7 @@ class CarrinhoSerializer(serializers.ModelSerializer):
         model = Carrinho
         fields = ['id', 'itens', 'total']
 
+    # Soma os subtotais de todos os itens para ter o valor total
     def get_total(self, obj):
         total = sum(
             (i.quantidade * i.variacao.produto.preco for i in obj.itens.all()),
@@ -37,13 +41,14 @@ class CarrinhoSerializer(serializers.ModelSerializer):
         )
         return total.quantize(Decimal("0.01"))
 
-# POST/cart/items
+# Validade os dados para adicionar uma variação ao carrinho
 class AdicionarItemSerializer(serializers.Serializer):
     id_variacao = serializers.PrimaryKeyRelatedField(
         queryset=Variacao.objects.select_related("produto"), source="variacao"
     )
     quantidade = serializers.IntegerField(min_value=1)
 
+    # Validade a inclusão de produtos inativos e o estoque do produto
     def validate(self, attrs):
         variacao = attrs['variacao']
         carrinho = self.context["carrinho"]
@@ -61,6 +66,7 @@ class AdicionarItemSerializer(serializers.Serializer):
             )
         return attrs
 
+    # Adiciona a variação ao carrinho
     @transaction.atomic
     def create(self, validated_data):
         carrinho = self.context['carrinho']
@@ -76,10 +82,11 @@ class AdicionarItemSerializer(serializers.Serializer):
 
         return item
 
+    # Retorna o item criado
     def to_representation(self, instance):
         return ItemCarrinhoSerializer(instance, context=self.context).data
 
-# PUT/cart/items
+# Responsável por atualizar a quantidade de itens já existentes
 class AtualizarItemSerializer(serializers.ModelSerializer):
     quantidade = serializers.IntegerField(min_value= 1)
 
@@ -87,6 +94,7 @@ class AtualizarItemSerializer(serializers.ModelSerializer):
         model = ItemCarrinho
         fields = ['quantidade']
 
+    # Valida a nova quantidade solicitada
     def validate_quantidade(self, value):
         variacao = self.instance.variacao
 

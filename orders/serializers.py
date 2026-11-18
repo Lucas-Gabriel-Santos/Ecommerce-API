@@ -2,6 +2,7 @@ from rest_framework import serializers
 from orders.models import ItemPedido, MetodoPagamento, Pedido, StatusPedido, TipoPagamento
 from orders.services import criar_pedido, alterar_status
 
+# Serializer de itens de um pedido, mostra os dados da variação do pedido, quantidade, preço unitário e subtotal
 class ItemPedidoSerializer(serializers.ModelSerializer):
     produto = serializers.CharField(source='variacao.produto.nome', read_only= True)
     id_variacao = serializers.IntegerField(read_only= True)
@@ -16,6 +17,7 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
     def get_subtotal(self, obj):
         return obj.quantidade * obj.preco_unitario
 
+# Mostra os dados completo de um pedido
 class PedidoSerializer(serializers.ModelSerializer):
     cliente = serializers.CharField(source= 'cliente.nome', read_only= True)
     itens = ItemPedidoSerializer(many= True, read_only=True)
@@ -25,7 +27,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         model = Pedido
         fields = ['id', 'cliente','status', 'criado_em', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'tipo_pagamento', 'ultimos4_pagamento', 'itens', 'total' ]
 
-# POST/orders
+# Valida os dados para finalizar um pedido
 class PedidoCriarSerializer(serializers.ModelSerializer):
     payment_method_id = serializers.PrimaryKeyRelatedField(
         queryset = MetodoPagamento.objects.none(),
@@ -37,12 +39,17 @@ class PedidoCriarSerializer(serializers.ModelSerializer):
         model = Pedido
         fields = ['cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'payment_method_id']
 
+    """
+    Restringe as opções de pagamento aos tipos cadastrados pelo próprio cliente.
+    Impede que ele chegue a itilizar o método de pagamento de outro usuário
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get('request')
 
         if request and request.user.is_authenticated and hasattr(request.user, 'cliente'):
             self.fields['payment_method_id'].queryset  = MetodoPagamento.objects.filter(cliente = request.user.cliente)
+
 
     def create(self, validated_data):
         metodo = validated_data.pop('metodo_pagamento')
@@ -53,7 +60,7 @@ class PedidoCriarSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return PedidoSerializer(instance, context = self.context).data
     
-# PATCH/orders/:id/status
+# Valida as alterações de status
 class PedidoStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices= StatusPedido.choices)
 
@@ -63,14 +70,14 @@ class PedidoStatusSerializer(serializers.Serializer):
     def to_representation(self, instance):
         return PedidoSerializer(instance, context = self.context).data
 
-# UC09: Métodos de pagaento
+# Valida os métodos de pagamento cadastrados
 class MetodoPagamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MetodoPagamento
         fields = ['id', 'tipo', 'apelido', 'ultimos4']
         read_only_fields = ['id']
 
-    # UC09: Faz com que não seja permitido adicionar o n° completo do cartão ou o CVV
+    # Faz com que não seja permitido adicionar o n° completo do cartão ou o CVV
     def to_internal_value(self, data):
         extras = set(data) - set(self.fields)
 
@@ -82,13 +89,15 @@ class MetodoPagamentoSerializer(serializers.ModelSerializer):
 
         return super().to_internal_value(data)
 
+    # Usa regras específicas para cada tipo de pagamento
     def validate(self, attrs):
         ultimos4 = attrs.get('ultimos4', '')
 
         if attrs['tipo'] == TipoPagamento.PIX:
+            # Pix não usa os quatro últimos dígitos
             if ultimos4:
                 raise serializers.ValidationError({'Ultimos4': 'PIX não usa os 4 últimos dígitos'})
-
+        # Cartão exige o uso dos quatro últimos dígitos
         elif not ultimos4:
             raise serializers.ValidationError({'Ultimos4': 'Informe os últimos 4 dígitos do seu cartão'})
 

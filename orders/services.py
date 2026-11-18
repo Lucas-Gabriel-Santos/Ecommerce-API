@@ -6,12 +6,13 @@ from cart.models import Carrinho
 from catalog.models import Variacao
 from orders.models import ItemPedido, Pedido, StatusPedido
 
+# Exceção utilizada somente quando não existe estoque suficiente
 class EstoqueInsuficiente(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_detail = 'Estoque Insuficiente'
     default_code = 'estoque_insuficiente'
 
-# UC08: Transições válidas
+# Transições válidas entre os status dos pedidos
 TRANSICOES = {
     StatusPedido.PENDENTE: {StatusPedido.CONFIRMADO, StatusPedido.CANCELADO},
     StatusPedido.CONFIRMADO: {StatusPedido.ENVIADO, StatusPedido.CANCELADO},
@@ -20,6 +21,7 @@ TRANSICOES = {
     StatusPedido.CANCELADO: set(),
 }
 
+# Finaliza a compra utilizando todos os itens do carrinho
 @transaction.atomic
 def criar_pedido(cliente, endereco, metodo):
     carrinho = Carrinho.objects.get(cliente = cliente)
@@ -84,6 +86,7 @@ def criar_pedido(cliente, endereco, metodo):
 @transaction.atomic
 def alterar_status(pedido, novo_status):
 
+    # Verifica se a mudança solicitada está entre as transições permitidas
    if novo_status not in TRANSICOES[pedido.status]:
        permitidos = ', '.join(sorted(TRANSICOES[pedido.status])) or 'nenhum'
        raise ValidationError(
@@ -91,17 +94,21 @@ def alterar_status(pedido, novo_status):
            f"Permitidos: {permitidos}"
        )
 
+   # Atualiza o status
    mudou_status = Pedido.objects.filter(pk = pedido.pk, status = pedido.status).update(status = novo_status)
 
+   # Verifica se o pedido foi alterado por outra operação antes da atualização
    if not mudou_status:
        raise ValidationError('O status do pedido mudou. Tente novamente')
 
+   # Devolve ao estoque a quantidade de todas as variações se o pedido for cancelado
    if novo_status == StatusPedido.CANCELADO:
        for item in pedido.itens.all():
            Variacao.objects.filter(pk = item.variacao_id).update(
                quantidade = F('quantidade') + item.quantidade
             )
            
+   # Atualiza a intância com os dados recentes no banco de dados      
    pedido.refresh_from_db()
    return pedido
 

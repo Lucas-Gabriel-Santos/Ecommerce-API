@@ -19,11 +19,12 @@ from cart.serializers import  CarrinhoSerializer, AdicionarItemSerializer, Atual
     ),
 )
 class CarrinhoView(generics.RetrieveAPIView):
+    # Permite que o cliente consulte o próprio carrinho
     queryset = Carrinho.objects.none()
     serializer_class = CarrinhoSerializer
     permission_classes = [EhCliente]
 
-    # O cliente só vai poder ver o proprio carrinho
+    # O cliente só vai poder ver o proprio carrinho, impedindo o acesso ao carrinho de outros clientes
     def get_object(self):
         return get_object_or_404(
             Carrinho.objects.prefetch_related('itens__variacao__produto'),
@@ -65,6 +66,9 @@ class CarrinhoView(generics.RetrieveAPIView):
     ),
 )
 class ItemCarrinhoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet,):
+    # Gerencia a criação, atualização e remoção dos itens do carrinho
+    
+    # Somente clientes autenticados
     permission_classes = [EhCliente]
 
     # Definindo métodos HTTP permitidos
@@ -75,6 +79,7 @@ class ItemCarrinhoViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, mixi
             return ItemCarrinho.objects.none()
         return ItemCarrinho.objects.filter( carrinho__cliente__usuario = self.request.user).select_related("variacao__produto")
 
+    # Seleciona o serializer de acordo com a operação
     def get_serializer_class(self):
         if self.action == 'create':
             return AdicionarItemSerializer

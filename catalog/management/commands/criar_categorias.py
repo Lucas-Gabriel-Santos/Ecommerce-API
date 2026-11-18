@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from catalog.models import Categoria
 
+# Lista de categorias utilizadas no catalogo da loja
 CATEGORIAS = [
     'Calças',
     'Bermudas',

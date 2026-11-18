@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 from accounts.models import Usuario
 from accounts.validators import validar_forca_senha
 
+# Seed do criar lojista utilizando credenciais definidas nas variáveis de ambiente
 class Command(BaseCommand):
     help = "Criar o lojista inicial da loja"
 
@@ -11,11 +12,13 @@ class Command(BaseCommand):
         email = config("LOJISTA_EMAIL", default="lojistaLoja@email.com").strip().lower()
         senha = config("LOJISTA_SENHA", default="Lojista@123")
 
+        # Valida a força da senha antes de permitir antes da criação da conta 
         try:
             validar_forca_senha(senha)
         except ValidationError as erro:
             raise CommandError(f"Senha fraca: {erro.detail[0]}")
 
+        # Verifica se já existe uma conta com o email informado
         if Usuario.objects.filter(email__iexact =  email).exists():
             self.stdout.write(self.style.WARNING(f"O usuário {email} já existe"))
             return
