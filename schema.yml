@@ -1,0 +1,1524 @@
+openapi: 3.0.3
+info:
+  title: API ECOMMERCE
+  version: 1.0.0
+paths:
+  /auth/forgot-password:
+    post:
+      operationId: auth_forgot_password_create
+      description: Envia um link com token temporário se o email estiver cadastrado
+      summary: Solicitar recuperação de senha
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPassword'
+            examples:
+              Solicitação:
+                value:
+                  email: gabriel@email.com
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForgotPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForgotPassword'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: Enviaremos as instruções de recuperação se o seu email já estiver
+            cadastrado no sistema
+  /auth/login:
+    post:
+      operationId: auth_login_create
+      description: Autentica por email e senha e devolve o JWT (`access`) e o `refresh`
+      summary: Login - Cliente ou Lojista
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+            examples:
+              Login:
+                value:
+                  email: gabriel@email.com
+                  password: lucas@123
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /auth/register:
+    post:
+      operationId: auth_register_create
+      description: "\n        Cria um usuário com o papel sendo Cliente.\n        O
+        campo papel, se enviado, é ignorado.\n        "
+      summary: Cadastro dos clientes
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Registro'
+            examples:
+              Cadastro:
+                value:
+                  email: gabriel@email.com
+                  password: lucas@123
+                  cliente:
+                    nome: Lucas Gabriel
+                    data_nascimento: '2000-07-17'
+                    telefone: '84998576734'
+                    cpf: '12345678901'
+                    cep: '59114071'
+                    endereco: Rua do Limoeiro, 80, Natal - RN
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Registro'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Registro'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registro'
+          description: ''
+  /auth/reset-password:
+    post:
+      operationId: auth_reset_password_create
+      description: "\n        Redefine a senha com o token recebido por email. O token
+        expira e só pode \n        ser usado uma vez. A nova senha exige 8 caracteres,
+        1 maiúscula e 1 caractere especial\n        "
+      summary: Redefinir a senha
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+            examples:
+              Redefinição:
+                value:
+                  token: 3f2b8c1e-5a7d-4c2e-9b1a-6d8e0f4a7c21
+                  new_password: NovaSenha@123
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: Senha redefinida com sucesso
+  /cart:
+    get:
+      operationId: cart_retrieve
+      description: "\n        Somente para clientes autenticados. Devolve os itens
+        do carrinho\n        para o usuário logado, com o preço, subtotal e total.\n
+        \       "
+      summary: ver todos os itens que existem no meu carrinho
+      tags:
+      - Carrinho
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrinho'
+          description: ''
+  /cart/items:
+    post:
+      operationId: cart_items_create
+      description: "\n            Somente para clientes. Coloque a variação e quantidade
+        do item.\n            Se variação já estiver no carrinho, ela e somanda com
+        a quantidade. A quantidade mínima é 1,\n            o estoque da variação,
+        e produtos inativos não podem ser adicionados.\n            "
+      summary: Adicionar itens ao carrinho
+      tags:
+      - Carrinho
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdicionarItem'
+            examples:
+              AdicionarItem:
+                value:
+                  variacao_id: 3
+                  quantidade: 2
+                summary: Adicionar item
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdicionarItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdicionarItem'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdicionarItem'
+          description: ''
+  /cart/items/{id}:
+    put:
+      operationId: cart_items_update
+      description: "\n            Somente para clientes. O valor enviado substitui
+        a quantidade atual de um item.\n            Mínimo é 1 e o máximo é o estoque
+        existente de variações.\n            "
+      summary: Atualizar a quantidade de itens no carrinho
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this item carrinho.
+        required: true
+      tags:
+      - Carrinho
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarItem'
+            examples:
+              NovaQuantidade:
+                value:
+                  quantidade: 3
+                summary: Nova quantidade
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AtualizarItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AtualizarItem'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtualizarItem'
+          description: ''
+    delete:
+      operationId: cart_items_destroy
+      description: Somente para clientes. Exclui itens do próprio carrinho.
+      summary: Excluir itens do carrinho
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this item carrinho.
+        required: true
+      tags:
+      - Carrinho
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /categories:
+    get:
+      operationId: categories_list
+      description: Categorias fixas da loja, criadas por seed. Acesso público e paginado
+      summary: Lista de categorias
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Categorias
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoriaList'
+          description: ''
+  /orders:
+    get:
+      operationId: orders_list
+      description: "\n            Paginado. O cliente vê somente os próprios pedidos.
+        O lojista vê todos. sem filtro e só os ativos (PENDENTE, CONFIRMADO e ENVIADO).\n
+        \           Usando `status` dá para ver todos, como ENTREGUE e CANCELADO.\n
+        \           "
+      summary: Listar pedidos
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELADO
+          - CONFIRMADO
+          - ENTREGUE
+          - ENVIADO
+          - PENDENTE
+        description: Filtro por status - somente lojista
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPedidoList'
+          description: ''
+    post:
+      operationId: orders_create
+      description: "\n            Somente o Cliente. Informe o endereço de entrega
+        e o `payment_method_id`, que deve\n            ser somente do cliente logado.
+        O estoque de todos os itens é revalidado e baixado \n            em uma transação:
+        se algum item não tiver no estoque, nenhum pedido é criado e a resposta será
+        404.\n            O pedido nasce PENDENTE, guarda o preço unitário do momento
+        da compra, copia o endereço e o pagamento, e o carrinho é esvaziado.\n            "
+      summary: Finalizar compra - checkout do carrinho inteiro
+      tags:
+      - Pedidos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+            examples:
+              Checkout:
+                value:
+                  payment_method_id: 1
+                  cep: '59114071'
+                  rua: Rua do limoeiro
+                  numero: '80'
+                  bairro: Centro
+                  cidade: Natal
+                  uf: RN
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidoCriar'
+          description: ''
+  /orders/{id}:
+    get:
+      operationId: orders_retrieve
+      description: "\n            O cliente acessa somente os próprios pedidos, se
+        tentar acessar de outro retorna 404.\n            O lojista acessa de todos.\n
+        \           "
+      summary: Detalhar pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this pedido.
+        required: true
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+  /orders/{id}/status:
+    patch:
+      operationId: orders_status_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this pedido.
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidoStatus'
+          description: ''
+  /payment-methods:
+    get:
+      operationId: payment_methods_list
+      description: "\n            Somente o Cliente. Paginado, apenas os clientes
+        logados podem ver os métodos.\n            "
+      summary: Listar os métodos de pagamento
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Métodos de Pagamento
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMetodoPagamentoList'
+          description: ''
+    post:
+      operationId: payment_methods_create
+      description: "\n            Somente o Cliente. Tipos de método: PIX, CREDITO
+        E DEBIDO. Se formcartão o cliente informa os 4 últimos\n            digitos.
+        O número completo do cartão e o CVV nunca são aceitas.\n            "
+      summary: Cadastrar métodos de pagamento
+      tags:
+      - Métodos de Pagamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetodoPagamento'
+            examples:
+              CartãoDeCrédito:
+                value:
+                  tipo: CREDITO
+                  apelido: Cartão principal
+                  ultimos4: '9696'
+                summary: Cartão de crédito
+              Pix:
+                value:
+                  tipo: PIX
+                  apelido: Chave CPF
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MetodoPagamento'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MetodoPagamento'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetodoPagamento'
+          description: ''
+  /payment-methods/{id}:
+    delete:
+      operationId: payment_methods_destroy
+      description: "\n            Somente o Cliente, e apenas os próprios métodos.
+        Pedidos já feitos não são afetados, \n            porque guardam uma cópia
+        dos dados.\n            "
+      summary: Remover os métodos de pagamento
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this metodo pagamento.
+        required: true
+      tags:
+      - Métodos de Pagamento
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /products:
+    get:
+      operationId: products_list
+      description: "\n            Os produtos podem ser acessados por todos e é paginado.
+        Os filtros combináveis: `category` (id), `min_price`, \n            `max_price`,
+        `search`. Os Visitantes e Clientes podem somente ver os produtos que estão
+        ativos. O lojista autenticado vê todos os \n            produtos, até os inativos
+        e pode usar `status` (active ou inactive)\n            "
+      summary: Listar e buscar produtos
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: number
+      - in: query
+        name: max_price
+        schema:
+          type: number
+      - in: query
+        name: min_price
+        schema:
+          type: number
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - inactive
+        description: |-
+          * `active` - active
+          * `inactive` - inactive
+      tags:
+      - Produtos
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProdutoListList'
+          description: ''
+    post:
+      operationId: products_create
+      description: "\n            Somente o lojista. Os preços devems er maiores que
+        zero e a categoria deve existir. \n            O estoque de produtos é conrolado
+        nas variações\n            "
+      summary: Criar produto - lojista
+      tags:
+      - Produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+            examples:
+              NovoProduto:
+                value:
+                  nome: 'Camisa preta '
+                  descricao: Camisa preta de algodão com estampa frontal da banda
+                    kiss
+                  preco: '89.99'
+                  ativo: true
+                  categoria_id: 1
+                summary: Novo produto
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoEscrita'
+          description: ''
+  /products/{id}:
+    get:
+      operationId: products_retrieve
+      description: "\n            Os produtos podem ser acessados por todos (Acesso
+        público). Devolve o produto com categoria e variações.\n            Os produtos
+        inativos retorna 404 para os Clientes e Visitantes.\n            "
+      summary: Detalhes do produto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this produto.
+        required: true
+      tags:
+      - Produtos
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoDetalhe'
+          description: ''
+    put:
+      operationId: products_update
+      description: "\n            Somente o lojista. Os produtos não são excluídos.
+        Eles são ativados e desativados.\n            Para tirar um produto de venda:
+        `ativo: false`\n            "
+      summary: Editar, ativar ou desativar produto - lojista
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this produto.
+        required: true
+      tags:
+      - Produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+            examples:
+              DesativarProduto:
+                value:
+                  nome: 'Camisa preta '
+                  descricao: Camisa preta de algodão com estampa frontal da banda
+                    kiss
+                  preco: '89.99'
+                  ativo: false
+                  categoria_id: 1
+                summary: Desativar produto
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProdutoEscrita'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoEscrita'
+          description: ''
+  /products/{produto_id}/variations:
+    post:
+      operationId: products_variations_create
+      description: "\n            Somente o lojista. Cada combinação de tamanho e
+        cor é única dentro de um produto.\n            Para produtos de tamanho único,
+        basta usar tamanho `Único`\n            "
+      summary: Criar variação de um produto - lojista
+      parameters:
+      - in: path
+        name: produto_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Variações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Variacao'
+            examples:
+              NovaVariação:
+                value:
+                  tamanho: M
+                  cor: Azul
+                  quantidade: 10
+                summary: Nova variação
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Variacao'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Variacao'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variacao'
+          description: ''
+  /products/{produto_id}/variations/{id}:
+    put:
+      operationId: products_variations_update
+      description: "\n            Somente o lojista. Atualiza apenas a quantidade
+        em estoque.\n            Variações não são excluídas, zere o estoque para
+        tirar de venda.\n            "
+      summary: Atualizar o estoque de uma variação - lojista
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: produto_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Variações
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VariacaoEstoque'
+            examples:
+              NovoEstoque:
+                value:
+                  quantidade: 25
+                summary: Novo estoque
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VariacaoEstoque'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VariacaoEstoque'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariacaoEstoque'
+          description: ''
+  /schema:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - ht
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    AdicionarItem:
+      type: object
+      properties:
+        id_variacao:
+          type: integer
+        quantidade:
+          type: integer
+          minimum: 1
+      required:
+      - id_variacao
+      - quantidade
+    AtualizarItem:
+      type: object
+      properties:
+        quantidade:
+          type: integer
+          minimum: 1
+      required:
+      - quantidade
+    Carrinho:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemCarrinho'
+          readOnly: true
+        total:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - itens
+      - total
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 25
+      required:
+      - id
+      - nome
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        data_nascimento:
+          type: string
+          format: date
+        telefone:
+          type: string
+          pattern: ^\d{10,11}$
+          maxLength: 11
+        cpf:
+          type: string
+          pattern: ^\d{11}$
+          maxLength: 11
+        cep:
+          type: string
+          pattern: ^\d{8}$
+          maxLength: 8
+        endereco:
+          type: string
+          maxLength: 300
+      required:
+      - cep
+      - cpf
+      - data_nascimento
+      - endereco
+      - id
+      - nome
+      - telefone
+    ForgotPassword:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    ItemCarrinho:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        produto:
+          type: string
+          readOnly: true
+        id_variacao:
+          type: integer
+          readOnly: true
+        tamanho:
+          type: string
+          readOnly: true
+        cor:
+          type: string
+          readOnly: true
+        preco_unitario:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        subtotal:
+          type: string
+          readOnly: true
+      required:
+      - cor
+      - id
+      - id_variacao
+      - preco_unitario
+      - produto
+      - subtotal
+      - tamanho
+    ItemPedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        produto:
+          type: string
+          readOnly: true
+        id_variacao:
+          type: integer
+          readOnly: true
+        tamanho:
+          type: string
+          readOnly: true
+        cor:
+          type: string
+          readOnly: true
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        preco_unitario:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        subtotal:
+          type: string
+          readOnly: true
+      required:
+      - cor
+      - id
+      - id_variacao
+      - preco_unitario
+      - produto
+      - quantidade
+      - subtotal
+      - tamanho
+    MetodoPagamento:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tipo:
+          $ref: '#/components/schemas/TipoEnum'
+        apelido:
+          type: string
+          maxLength: 30
+        ultimos4:
+          oneOf:
+          - type: string
+            pattern: ^\d{4}$
+            maxLength: 4
+          - type: string
+            maxLength: 0
+      required:
+      - id
+      - tipo
+    PaginatedCategoriaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Categoria'
+    PaginatedMetodoPagamentoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetodoPagamento'
+    PaginatedPedidoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pedido'
+    PaginatedProdutoListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProdutoList'
+    PapelEnum:
+      enum:
+      - cliente
+      - lojista
+      type: string
+      description: |-
+        * `cliente` - Cliente
+        * `lojista` - Lojista
+    PatchedPedidoStatus:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        criado_em:
+          type: string
+          format: date-time
+          readOnly: true
+        cep:
+          type: string
+          pattern: ^\d{8}$
+          maxLength: 8
+        rua:
+          type: string
+          maxLength: 300
+        numero:
+          type: string
+          maxLength: 10
+        bairro:
+          type: string
+          maxLength: 100
+        cidade:
+          type: string
+          maxLength: 100
+        uf:
+          type: string
+          pattern: ^[A-Z]{2}$
+          maxLength: 2
+        tipo_pagamento:
+          $ref: '#/components/schemas/TipoPagamentoEnum'
+        ultimos4_pagamento:
+          oneOf:
+          - type: string
+            pattern: ^\d{4}$
+            maxLength: 4
+          - type: string
+            maxLength: 0
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedido'
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - bairro
+      - cep
+      - cidade
+      - cliente
+      - criado_em
+      - id
+      - itens
+      - numero
+      - rua
+      - tipo_pagamento
+      - total
+      - uf
+    PedidoCriar:
+      type: object
+      properties:
+        cep:
+          type: string
+          pattern: ^\d{8}$
+          maxLength: 8
+        rua:
+          type: string
+          maxLength: 300
+        numero:
+          type: string
+          maxLength: 10
+        bairro:
+          type: string
+          maxLength: 100
+        cidade:
+          type: string
+          maxLength: 100
+        uf:
+          type: string
+          pattern: ^[A-Z]{2}$
+          maxLength: 2
+        payment_method_id:
+          type: integer
+          writeOnly: true
+      required:
+      - bairro
+      - cep
+      - cidade
+      - numero
+      - payment_method_id
+      - rua
+      - uf
+    PedidoStatus:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - status
+    ProdutoDetalhe:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        ativo:
+          type: boolean
+        categoria:
+          allOf:
+          - $ref: '#/components/schemas/Categoria'
+          readOnly: true
+        categoria_id:
+          type: integer
+          readOnly: true
+        variacoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variacao'
+          readOnly: true
+      required:
+      - categoria
+      - categoria_id
+      - id
+      - nome
+      - preco
+      - variacoes
+    ProdutoEscrita:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        ativo:
+          type: boolean
+        categoria_id:
+          type: integer
+      required:
+      - categoria_id
+      - id
+      - nome
+      - preco
+    ProdutoList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        ativo:
+          type: boolean
+        categoria:
+          type: string
+          readOnly: true
+      required:
+      - categoria
+      - id
+      - nome
+      - preco
+    Registro:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        papel:
+          allOf:
+          - $ref: '#/components/schemas/PapelEnum'
+          readOnly: true
+        cliente:
+          $ref: '#/components/schemas/Cliente'
+      required:
+      - cliente
+      - email
+      - id
+      - papel
+      - password
+    ResetPassword:
+      type: object
+      properties:
+        token:
+          type: string
+          format: uuid
+        new_password:
+          type: string
+          writeOnly: true
+      required:
+      - new_password
+      - token
+    StatusEnum:
+      enum:
+      - PENDENTE
+      - CONFIRMADO
+      - ENVIADO
+      - ENTREGUE
+      - CANCELADO
+      type: string
+      description: |-
+        * `PENDENTE` - Pendente
+        * `CONFIRMADO` - Confirmado
+        * `ENVIADO` - Enviado
+        * `ENTREGUE` - Entregue
+        * `CANCELADO` - Cancelado
+    TipoEnum:
+      enum:
+      - PIX
+      - CREDITO
+      - DEBITO
+      type: string
+      description: |-
+        * `PIX` - Pix
+        * `CREDITO` - Cartão de Crédito
+        * `DEBITO` - Cartão de Débito
+    TipoPagamentoEnum:
+      enum:
+      - PIX
+      - CREDITO
+      - DEBITO
+      type: string
+      description: |-
+        * `PIX` - Pix
+        * `CREDITO` - Cartão de Crédito
+        * `DEBITO` - Cartão de Débito
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    Variacao:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tamanho:
+          type: string
+          maxLength: 20
+        cor:
+          type: string
+          maxLength: 50
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+      required:
+      - cor
+      - id
+      - tamanho
+    VariacaoEstoque:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tamanho:
+          type: string
+          readOnly: true
+        cor:
+          type: string
+          readOnly: true
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+      required:
+      - cor
+      - id
+      - tamanho
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
