@@ -2,7 +2,7 @@
 API de uma e-commerce de uma loja de roupas (New Style), desenvolvida em Django Rest Framework.
 
 ![Django](https://img.shields.io/badge/Django-6.1.2-092E20?logo=django&logoColor=white)
-![DRF](https://img.shields.io/badge/DRF-3.18.8-A30000?logo=django&logoColor=white)
+![DRF](https://img.shields.io/badge/DRF-3.18.3-A30000?logo=django&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 
 ## 📋 Sobre o Projeto
@@ -14,7 +14,7 @@ A API atende uma loja virtual de roupas, com uma única loja (New Style). O loji
 ### Core
 
 - **Django 6.1.2** - Framework web principal
-- **Django Rest Framework 3.18.2** - Framework para construção de API REST
+- **Django Rest Framework 3.18.3** - Framework para construção de API REST
 
 ### Utilitários
 
@@ -62,7 +62,7 @@ O diagrama Entidade e Relacionamento foi feito no BrModelo.
 
 ![DER do Banco](assets/DER_Ecommerce.png)
 
-### Decições de modelagem
+### Decisões de modelagem
 
 - **Usuario** separado de **Cliente**. O Usuario vai guardar o login. O lojista existe somente como Usuario, sem dados de cliente, e é criado via seed.
 - Chave primária **id** em todas em entidades.
@@ -170,7 +170,7 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 - **PEP 8** para formatação Python
 - **Docstrings** para funções e classes
 - **Português** para nomes de domínio (models, campos, serializers, views), mantendo em inglês o que é sintaxe do framework (`Meta`, `ForeignKey`, `Serializer`...)
-- **Regras de negócios** ficam em services.py e permissões por papel em `accounts/permissions.py`
+- **Regras de negócios** ficam em `services.py` e permissões por papel em `accounts/permissions.py` 
 
 ## 📖 Documentação da API
 
@@ -184,4 +184,55 @@ Com o servidor ja rodando, abra o `/docs`. Todos os endpoints estão descritos n
 - Clique em **Authorize** e cole o token.
 - Todas as próximas chamadas vão com o token. Para trocar de usuário, basta dar Logout na janela e colar outro token de usuário.
 
+### Endpoints
 
+As rotas não têm barra final, a paginação usa `?page=` (10 itens por página)
+
+| Método      | Rota                                         | Acesso              |
+|-------------|----------------------------------------------|---------------------|
+| POST        |   `/auth/register`                           |   Público           |
+| POST        |   `/auth/login`                              |   Público           |
+| POST        |   `/auth/forgot-password`                    |   Público           |
+| POST        |   `/auth/reset-password`                     |   Público (token)   |
+| GET         |   `/categories`                              |   Público           |
+| GET         |   `/products`                                |   Público           |
+| GET         |   `/products/{id}`                           |   Público           |
+| POST        |   `/products`                                |   Lojista           |
+| PUT         |   `/products/{id}`                           |   Lojista           |
+| POST        |   `/products/{id}/variations`                |   Lojista           |
+| PUT         |   `/products/{id}/variations/{variationId}`  |   Lojista           |
+| GET         |   `/cart`                                    |   Cliente           |
+| POST        |   `/cart/items`                              |   Cliente           |
+| PUT         |   `/cart/items/{id}`                         |   Cliente           |
+| DELETE      |   `/cart/items/{id}`                         |   Cliente           |
+| POST        |   `/orders`                                  |   Cliente           |
+| GET         |   `/orders`                                  |   Cliente/Lojista   |
+| GET         |   `/orders/{id}`                             |   Cliente/Lojista   |
+| PATCH       |   `/orders/{id}/status`                      |   Lojista           |
+| POST        |   `/payment-methods`                         |   Cliente           |
+| GET         |   `/payment-methods`                         |   Cliente           |
+| DELETE      |   `/payment-methods/{id}`                    |   Cliente           |
+
+## Autenticação e permissões
+
+- Rotas protegidas exigem `Authorization: Bearer <token>`
+- Sem o token válido, a resposta é 401
+- O cadastro sempre cria um cliente: o campo papel, se enviado, é ignorado
+- O login sempre com letras minúsculas no email
+- O cliente pode somente acessar o próprio carrinho, pedidos e métodos de pagamento.
+
+## Filtros de produtos
+
+`GET /products?category=&min_price=&max_price=&search=&status=&page=`
+
+| Parâmetro                  | Descrição                                          |
+|----------------------------|----------------------------------------------------|
+| `category`                 | O id da categoria                                  |
+| `min_price` e ` max_price` | A faixa de preço                                   |
+| `search`                   | Buscar pelo nome (sem diferenciação de maiúsculas) |
+| `status`                   | `active` ou `inactive` (somente lojista)           |
+| `page`                     | Número da página                                   |
+
+- Os filtros são combináveis 
+- Visitantes e clientes podem ver somente os próprios produtos
+- Produto inativo consultado por cliente e visitante retorna 404
