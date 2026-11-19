@@ -126,7 +126,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-## 7. Seed: Lojista e Categoria
+### 7. Seed: Lojista e Categoria
 
 ```bash
 python manage.py criar_lojista
